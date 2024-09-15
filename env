@@ -1,0 +1,7 @@
+POSTGRES_USER=YourName
+POSTGRES_PASSWORD=YourPassword
+POSTGRES_DB=YourDatabase
+MAIL_HOST=mailcatcher  # для локального запуска нужно указать localhost, для удаленного - mailcatcher
+MAIL_PORT=1025
+DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
+POSTGRES_HOST=db  # для локального запуска нужно указать localhost, для удаленного - db(имя сервиса в docker-compose.yml)
