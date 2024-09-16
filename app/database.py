@@ -5,6 +5,8 @@ from tortoise.models import Model
 import asyncio
 import asyncpg
 from dotenv import load_dotenv
+from datetime import datetime
+import pytz  # Импортируем pytz для работы с часовыми поясами
 
 # Загружаем переменные из .env файла
 load_dotenv()
@@ -28,7 +30,8 @@ class PriceRecord(Model):
                                     null=True)  # Максимальная цена (если есть)
     min_price = fields.DecimalField(max_digits=20, decimal_places=8,
                                     null=True)  # Минимальная цена (если есть)
-    date = fields.DatetimeField(null=True)  # Дата и время записи
+    date = fields.DatetimeField(auto_now_add=False, use_tz=True,
+                                null=True)  # Дата и время записи с использованием временной зоны
     difference = fields.DecimalField(max_digits=5, decimal_places=3,
                                      null=True)  # Разница в процентах
     total_amount = fields.DecimalField(max_digits=10, decimal_places=2,
@@ -108,6 +111,10 @@ async def save_to_db(exchange, pair, data, previous_price=None):
     # Рассчитываем стоимость накопленных BTC
     holdings_value = BTC_HOLDINGS * current_price
 
+    # Получаем текущее московское время
+    moscow_tz = pytz.timezone('Europe/Moscow')
+    current_datetime = data.get('date', datetime.now(moscow_tz))  # Используем московское время
+
     # Сохраняем запись в базу данных
     await PriceRecord.create(
         exchange=exchange,  # Название биржи
@@ -116,7 +123,7 @@ async def save_to_db(exchange, pair, data, previous_price=None):
         previous_price=previous_price,
         max_price=data.get('max price', None),  # Максимальная цена (если есть)
         min_price=data.get('min price', None),  # Минимальная цена (если есть)
-        date=data.get('date', None),  # Дата (если есть)
+        date=current_datetime,  # Используем московское время
         difference=difference,  # Разница в цене
         total_amount=data.get('total amount', None),  # Объем сделок (если есть)
         holdings_value=holdings_value  # Стоимость накопленных BTC
@@ -129,7 +136,7 @@ async def save_to_db(exchange, pair, data, previous_price=None):
         'price': current_price,
         'max price': data.get('max price', None),
         'min price': data.get('min price', None),
-        'date': data.get('date', None),
+        'date': current_datetime,
         'difference': difference,
         'total amount': data.get('total amount', None),
         'holdings_value': holdings_value

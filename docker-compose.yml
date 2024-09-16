@@ -27,6 +27,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      PGTZ: "Europe/Moscow"  # Установка временной зоны для PostgreSQL через переменную PGTZ
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
