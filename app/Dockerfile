@@ -9,11 +9,15 @@ RUN apt-get update && apt-get install -y \
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем все файлы проекта в контейнер
-COPY . /app
+# Копируем файл requirements.txt из корневой директории в контейнер
+COPY ../requirements.txt /app/
 
 # Устанавливаем зависимости из requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Копируем все файлы проекта (папку app) в контейнер
+COPY . /app
+
 # Команда для запуска приложения
-CMD ["python", "app/main.py"]
+CMD ["python", "main.py"]
+

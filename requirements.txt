@@ -9,12 +9,15 @@ asyncpg==0.29.0
 atlastk==0.13.3
 attrs==24.2.0
 frozenlist==1.4.1
+greenlet==3.0.3
 icalendar==5.0.13
 idna==3.9
 iso8601==1.1.0
 multidict==6.1.0
+playwright==1.47.0
 pydantic==2.9.1
 pydantic_core==2.23.3
+pyee==12.0.0
 pypika-tortoise==0.1.6
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
