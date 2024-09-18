@@ -6,7 +6,7 @@ services:
       context: ./app
       dockerfile: Dockerfile
     volumes:
-      - .:/app
+      - ./app:/app
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -21,22 +21,22 @@ services:
     ports:
       - "8000:8000"
 
-  app_2:
-    build:
-      context: ./app_2
-      dockerfile: Dockerfile
-    volumes:
-      - ./app_2:/app_2
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=db  # имя сервиса для Docker
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    depends_on:
-      - db
-    ports:
-      - "8001:8001"
+#  app_2:
+#    build:
+#      context: ./app_2
+#      dockerfile: Dockerfile
+#    volumes:
+#      - ./app_2:/app_2
+#    environment:
+#      - POSTGRES_USER=${POSTGRES_USER}
+#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+#      - POSTGRES_DB=${POSTGRES_DB}
+#      - POSTGRES_HOST=db  # имя сервиса для Docker
+#      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+#    depends_on:
+#      - db
+#    ports:
+#      - "8001:8001"
 
   db:
     image: postgres:16

@@ -20,12 +20,26 @@ async def handle_antibot(page):
         return False
 
 
-# Функция для парсинга маркетплейса
+# Функция сортировки по цене для Яндекс.Маркета
+async def sort_by_cheapest_yandex(page):
+    try:
+        await page.wait_for_selector('button[data-autotest-id="aprice"]', timeout=60000)
+        sort_button = await page.query_selector('button[data-autotest-id="aprice"]')
+        if sort_button:
+            await sort_button.click()
+            print("Кнопка сортировки по цене нажата.")
+        else:
+            print("Кнопка сортировки по цене не найдена.")
+    except Exception as e:
+        print(f"Ошибка при сортировке на Яндекс.Маркете: {e}")
+
+
+# Основная функция для парсинга маркетплейса
 async def scrape_marketplace(page, marketplace, url, search_query):
     try:
         # Переход на страницу
         await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        time.sleep(10)
+        time.sleep(4)
 
         # Проверка и обработка антибота для Ozon
         if marketplace == "Ozon":
@@ -33,89 +47,90 @@ async def scrape_marketplace(page, marketplace, url, search_query):
                 print(f"Перезагрузка страницы на {marketplace} из-за антибота...")
                 time.sleep(5)
 
-        # Убедимся, что поле поиска существует
+        # Поиск товара на маркетплейсе
         if marketplace == "Wildberries":
             search_input = await page.query_selector('input[placeholder="Найти на Wildberries"]')
         elif marketplace == "Ozon":
             search_input = await page.query_selector(
                 'input[placeholder="Искать на Ozon"], input[placeholder="Найти товары"]')
+        elif marketplace == "Yandex Market":
+            search_input = await page.query_selector('input[placeholder="Найти товары"]')
 
         if search_input:
-            # Заполняем поле поиска
             await search_input.fill(search_query)
-            time.sleep(5)
             await handle_antibot(page)  # Проверка антибота после заполнения
-            # Нажимаем клавишу Enter для поиска
-            await search_input.press('Enter')
-            time.sleep(5)
+            if marketplace == "Yandex Market":
+                search_button = await page.query_selector('button[data-auto="search-button"]')
+                if search_button:
+                    await search_button.click()
+            else:
+                await search_input.press('Enter')
             await handle_antibot(page)  # Проверка антибота после нажатия Enter
         else:
             print(f"Поле поиска не найдено на {marketplace}")
             return
 
         # Ожидание загрузки результатов поиска
-        await page.wait_for_selector('.product-card' if marketplace == "Wildberries" else '.j3o_23',
-                                     timeout=60000)
-        time.sleep(5)
-        await handle_antibot(page)  # Проверка антибота после загрузки результатов
+        await page.wait_for_selector(
+            '.product-card' if marketplace == "Wildberries" else '.j3o_23' if marketplace == "Ozon" else 'div[data-auto="searchOrganic"]',
+            timeout=60000)
+        await handle_antibot(page)
         time.sleep(4)
 
-        # Открываем фильтр сортировки
+        # Сортировка по цене
         if marketplace == "Wildberries":
             await page.click('.dropdown-filter__btn')
             time.sleep(2)
-            await handle_antibot(page)  # Проверка антибота после нажатия фильтра
-            time.sleep(2)
-            await page.wait_for_selector('.dropdown-filter__content', timeout=30000)
-            time.sleep(2)
-            await handle_antibot(page)  # Проверка антибота после загрузки фильтра
-            time.sleep(2)
             await page.click('text="По возрастанию цены"')
-            time.sleep(2)
-            await handle_antibot(page)  # Проверка антибота после выбора сортировки
-            time.sleep(2)
         elif marketplace == "Ozon":
             await page.click('input[title="Популярные"]')
-            time.sleep(5)
-            await handle_antibot(page)  # Проверка антибота после открытия сортировки
-            time.sleep(5)
+            time.sleep(2)
             await page.click('text="Дешевле"')
-            time.sleep(5)
-            await handle_antibot(page)  # Проверка антибота после выбора сортировки
-            time.sleep(5)
+        elif marketplace == "Yandex Market":
+            await sort_by_cheapest_yandex(page)
 
-        # Ожидаем обновления товаров после выбора сортировки
-        time.sleep(5)
-        await page.wait_for_selector('.product-card' if marketplace == "Wildberries" else '.j3o_23',
-                                     timeout=60000)
-        time.sleep(5)
-        await handle_antibot(page)  # Проверка антибота после обновления товаров
+        time.sleep(2)
 
-        # Извлекаем первую карточку товара (самый дешевый товар)
+        # Ожидание обновления товаров после сортировки
+        await page.wait_for_selector(
+            '.product-card' if marketplace == "Wildberries" else '.j3o_23' if marketplace == "Ozon" else 'div[data-auto="searchOrganic"]',
+            timeout=60000)
+        time.sleep(2)
+
+        # Извлечение данных о первом товаре
         first_product = await page.query_selector(
-            '.product-card' if marketplace == "Wildberries" else '.j3o_23')
+            '.product-card' if marketplace == "Wildberries" else '.j3o_23' if marketplace == "Ozon" else 'div[data-auto="searchOrganic"]')
 
         if first_product:
             # Извлекаем название товара
             if marketplace == "Wildberries":
                 product_name_element = await first_product.query_selector('.product-card__name')
-            else:  # Ozon
+            elif marketplace == "Ozon":
                 product_name_element = await first_product.query_selector('.tsBody500Medium')
+            else:  # Yandex Market
+                product_name_element = await first_product.query_selector(
+                    'span[data-auto="snippet-title"]')
             product_name = await product_name_element.text_content() if product_name_element else "Unknown Product"
 
             # Извлекаем цену товара
             if marketplace == "Wildberries":
                 product_price_element = await first_product.query_selector('.price__lower-price')
-            else:  # Ozon
+            elif marketplace == "Ozon":
                 product_price_element = await first_product.query_selector('.c3015-a1')
+            else:  # Yandex Market
+                product_price_element = await first_product.query_selector(
+                    'span[data-auto="snippet-price-current"]')
             product_price_raw = await product_price_element.text_content() if product_price_element else "0"
-            product_price = float(product_price_raw.replace('\u00A0', '').replace('₽', '').strip())
+            product_price = float(product_price_raw.replace('₽', '').strip())
 
             # Извлекаем ссылку на товар
             if marketplace == "Wildberries":
                 product_url_element = await first_product.query_selector('.product-card__link')
-            else:  # Ozon
+            elif marketplace == "Ozon":
                 product_url_element = await first_product.query_selector('a.tile-hover-target')
+            else:  # Yandex Market
+                product_url_element = await first_product.query_selector(
+                    'a[data-auto="snippet-link"]')
             product_url = await product_url_element.get_attribute(
                 'href') if product_url_element else url
 
@@ -144,7 +159,7 @@ async def scrape_marketplace(page, marketplace, url, search_query):
             print(f"Товар не найден на {marketplace}.")
     except TimeoutError:
         print(f"Timeout error on {marketplace}, restarting...")
-        raise  # Перезапуск будет инициирован в функции scrape_all_marketplaces
+        raise
 
 
 # Функция для парсинга всех маркетплейсов
@@ -152,8 +167,7 @@ async def scrape_all_marketplaces():
     while True:
         try:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(
-                    headless=False)  # не забываем менять на True, если работаем в докере
+                browser = await p.chromium.launch(headless=False)
                 page = await browser.new_page()
 
                 # Общий список маркетплейсов
@@ -179,8 +193,7 @@ async def scrape_all_marketplaces():
 
                 await browser.close()
 
-            # Выход из цикла, если завершение успешно
-            break
+            break  # Выход из цикла при успешном завершении
         except Exception as e:
             print(f"Ошибка: {e}, перезапуск через 5 секунд...")
-            time.sleep(5)  # Ожидание перед перезапуском
+            time.sleep(5)
