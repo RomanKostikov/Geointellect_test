@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 
 # Базовые URL для бирж с поддержкой динамической вставки символов пар
+# для получения полноценных api, необходимо регистрироваться на биржах
 BASE_URLS = {
     "binance": "https://api.binance.com/api/v3/ticker/price?symbol={pair}",
     "gateio": "https://api.gateio.ws/api/v4/spot/tickers?currency_pair={pair}",
